@@ -1,4 +1,4 @@
-#Gig Academy Analytics
+# Gig Academy Analytics
 
 This software supports the Gig Academy project at Newcastle University by accessing data from Basecamp.com and producing analytic data
 
