@@ -1,0 +1,10 @@
+<div id="selectAcBtnDiv">
+	<p>Select a Basecamp.com account:</p>
+
+	<%for (var item in user.accounts){%>  
+	  <button 
+	  	class="btn selectAcBtn" id="<%=user.accounts[item].name%>Btn" 
+	  	onclick="loadAccountSection('<%= user.accounts[item].name %>', '<%= user.accounts[item].id %>')"><%=user.accounts[item].name%>
+	  </button>  
+	 <%}%>
+</div>

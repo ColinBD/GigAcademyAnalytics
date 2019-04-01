@@ -1,0 +1,31 @@
+<div id="selectorBar">
+  <div class="filter">
+    <p>select participant:</p>
+    <select
+      id="selectParticipant"
+      onChange="changeParticipant(this.selectedIndex - 1)"
+    >
+      <!-- loaded dynamically from within processSelectedAccount -->
+    </select>
+  </div>
+
+  <div class="filter">
+    <p>select group:</p>
+    <select id="selectTeam" onChange="changeTeam(this.selectedIndex - 1)">
+      <!-- loaded dynamically from within processSelectedAccount -->
+    </select>
+  </div>
+
+  <div class="filter">
+    <p>select stat type:</p>
+    <select id="selectStat" onChange="changeStat(this)">
+      <!-- loaded dynamically from within processSelectedAccount -->
+      <option disabled="true" selected="true">- choose -</option>
+      <option>messages</option>
+      <option>campfire chats</option>
+      <option>pings</option>
+      <option>docs & files</option>
+      <option>to dos</option>
+    </select>
+  </div>
+</div>

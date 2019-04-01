@@ -1,0 +1,205 @@
+/* TO DO: set up media queries */
+body {
+  font-family: "Roboto", sans-serif;
+  margin: 0px;
+}
+
+#header {
+  display: inline-block;
+  width: 100%;
+  background-color: #2a2a2b; /* near black */
+  position: relative;
+  color: white;
+  height: 77px;
+}
+
+#header #welcomeMsg {
+  position: absolute;
+  left: 2%;
+  top: 35%;
+}
+
+#header #headerBtns {
+  position: absolute;
+  right: 2%;
+  top: 35%;
+}
+
+#header p {
+  text-align: center;
+  margin-top: -7px;
+  margin-left: 10px;
+}
+
+#header h1 {
+  text-align: center;
+  margin: 10px;
+  font-size: 2em;
+}
+
+.btn {
+  background-color: #37ae3b; /* darker green */
+  border: none;
+  border-radius: 10px;
+  padding: 5px 5px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  color: white;
+  font-size: 0.75em;
+  margin-left: 5px;
+  width: 100px;
+}
+
+.btn:hover {
+  background-color: #5ecc62; /* Green */
+}
+
+#selectorBar {
+  display: none;
+  width: 100%;
+  background-color: #37ae3b; /* darker green */
+  color: white;
+  text-align: center;
+  padding-bottom: 10px;
+}
+
+#loadingMsg {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  display: none;
+}
+
+#selectorBar p {
+  display: inline-block;
+}
+
+.filter {
+  display: inline-block;
+  width: 30%;
+}
+
+#mainSection {
+  display: inline-block;
+  width: 100%;
+  position: relative;
+  /* temp styles 
+	border-style:solid;
+    border-width:5px;
+    border-color:blue; */
+}
+
+#authenticateBtn {
+  background-color: #0080ff; /* blue */
+  font-size: 1.75em;
+  border-radius: 1em;
+  width: 35%;
+  height: 4em;
+}
+
+#authenticateBtnDiv {
+  text-align: center;
+  margin-top: 10%;
+}
+
+#authenticateBtnDiv p {
+  color: #666666; /* charcoal */
+  padding: 10%;
+}
+
+#selectAcBtnDiv {
+  text-align: center;
+  color: #666666; /* charcoal */
+}
+
+.selectAcBtn {
+  width: 110px;
+  height: 60px;
+  margin: 0 auto;
+  margin-bottom: 10px;
+  display: block;
+  background-color: #0080ff; /* blue */
+}
+
+.selectAcBtn:hover {
+  background-color: #6fa5fc; /* lighter blue */
+}
+
+select {
+  width: 150px;
+}
+
+#acContent {
+  text-align: center;
+  margin-top: 10%;
+}
+
+#acContent ul {
+  display: table;
+  margin: 0 auto;
+  list-style-type: none;
+  text-align: right;
+}
+
+#acContent li {
+  margin-top: 0.5em;
+}
+
+#loading {
+  animation: blinker 1s linear infinite;
+}
+
+@keyframes blinker {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 960px) {
+  /* selectorBar: stack selectors on labels*/
+  #selectorBar p {
+    display: block;
+    margin: 5px;
+  }
+
+  /* ensure there's a gap between the buttons when stacked */
+  #btnSwitchAc {
+    margin-bottom: 10px;
+  }
+}
+
+@media (max-width: 799px) {
+  /* header: stack the logout switch accounts buttons */
+  #header #headerBtns {
+    width: 95px;
+    top: 6%; /* TO DO: vertical align the div to the centre so whether there is one button or two they visible buttons will be centred */
+    margin: 4px;
+  }
+}
+
+@media (max-width: 639px) {
+  #header h1 {
+    font-size: 1.25em; /* main logo gets smaller */
+  }
+  #authenticateBtn {
+    font-size: 1em;
+  }
+}
+
+@media (max-width: 515px) {
+  select {
+    width: 90px;
+  }
+}
+
+@media (max-width: 414px) {
+  #header h1,
+  #header p {
+    text-align: left; /* send text left */
+  }
+
+  #welcomeMsg {
+    display: none;
+  }
+}

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include partials/head.ejs %>
+  </head>
+
+  <body>
+    <%- include partials/header.ejs %> <%- include partials/selectorBar.ejs %>
+
+    <div id="mainSection">
+      <% if (!user) { %>
+      <!-- no authenticated user found -->
+      <!-- show 'authenticate' button -->
+      <%- include partials/authenticate.ejs %> <% } else { %>
+      <!-- we have an authenticated user -->
+      <% if (user.accounts.length == 0) { %>
+      <!-- render no accounts found message -->
+      <%- include partials/noAccountsFound.ejs%> <% } else if
+      (user.accounts.length == 1) { %>
+      <!-- render account section done in the script tag below -->
+      <!-- do nothing here -->
+      <% } else { %>
+      <!-- render account selection buttons -->
+      <%- include partials/selectAccount.ejs%> <% } %> <% } %>
+      <!-- The -->
+      <div id="acContent" style="{display: none}"></div>
+    </div>
+
+    <script>
+      <% if (user) { %> //user is authenticated
+
+      	let account = {
+      		token: "<%=user.accessToken%>",
+      		name: "",
+      		id: "",
+      		HQ_id: "", //used to get the list of people on the account
+      	}
+
+      	//show logout button
+      	$('#btnLogout').css("visibility", "visible")
+      	//setup and show welcome message
+      	showDisplayName("<%= user.displayName %>")
+      	// if the user has administrator rights on only one account go ahead and set that up
+      	if (<%= user.accounts.length %> == 1) {
+      		//1 account: load that account page
+      		loadAccountSection("<%= user.accounts[0].name %>", "<%= user.accounts[0].id %>")
+      	};
+      <% } %>
+
+      function loadAccountSection (accountName, accountID) {
+      	$('#selectAcBtnDiv').css("display","none") //hide the account selection buttons
+      	// accounts content will be blank until user makes selections within the selector bar
+      	$('#acContent').html("<span id='loading'>Loading...</span>").css("display","block") //show the selected accounts content
+      	//store the account data
+      	account.name = accountName
+      	account.id = accountID
+      	processSelectedAccount()
+      }
+
+      function switchAccountBtnClick () {
+      	$('#selectorBar').css("display","none") //hide the selector bar
+      	$('#btnSwitchAc').css("visibility","hidden") //hide the switch accounts buttons
+      	$('#schoolName').css("visibility", "hidden") //hide the "for account..." header label
+      	$('#selectAcBtnDiv').css("display","block") //show the account selection buttons
+      	$('#acContent').css("display","none") //ensure loading message is hidden
+      }
+
+      function showDisplayName(name) {
+      	let displayName = name
+      	displayName = displayName.split(" ")
+      	$('#welcomeMsg').html(`Hi ${displayName[0]}`).css("visibility", "visible")
+      }
+    </script>
+  </body>
+  <html></html>
+</html>

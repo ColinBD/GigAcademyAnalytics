@@ -1,0 +1,45 @@
+<% if (!user) { %>
+		
+		<p>Hello, <%= user.username %>. View your <a href="/profile">profile</a>.</p>
+		<p>Your account ID is: <%= user.accounts[0].id %></p>
+		<!-- <p>Your access token is: <%= user.accessToken %></p> -->
+
+		<!-- list projects -->
+		<p>You have <%= user.accounts.length %> projects:</p>
+		<ul>
+		<%for (var item in user.accounts){%>
+		  <li>Name: <%=user.accounts[item].name%>. ID: <%=user.accounts[item].id%></li>    
+		  <%}%>
+		</ul>
+
+		<button onClick="getProjects()">Get projects</button>
+		<button onClick="getSEChats()">Get Sound Engineers Campfire Chats</button>
+	<% } %>
+
+<script>
+	function getProjects() {
+	    fetch(`/projects/${id}/${accessToken}`)
+	    	.then(result => result.json())
+	    	.then(result => {
+	    		const data = JSON.parse(result.data)
+	    		data.map(item => console.log("id: " + item.id + ", name: " + item.name))
+	    	})
+	    	.catch(error => {
+	    		console.error(error);
+	    	})
+	}
+
+	function getSEChats() {
+		console.log("getting the SE chats data")
+	    fetch(`/sechats/${id}/${accessToken}`)
+	    	.then(console.log("got it"))
+	    	.then(result => result.json())
+	    	.then(result => {
+	    		const data = JSON.parse(result.data)
+	    		data.map(item => console.log(item.content))
+	    	})
+	    	.catch(error => {
+	    		console.error(error);
+	    	})
+	}
+</script>
