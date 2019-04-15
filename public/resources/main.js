@@ -9,14 +9,28 @@ class Person {
     this.name = name;
     this.id = id;
   }
+
+  campfireChats = 0;
   messagesSent = 0;
-  pingsSent = 0;
-  chatsSent = 0;
-  docsAndFilesUploaded = 0;
-  toDosAdded = 0;
-  toDosCompleted = 0;
+  questionnaire = 0;
+  toDos = 0;
+  emailsForwarded = 0;
+  schedule = 0;
+  docsAndFiles = 0;
+
   present() {
-    $("#acContent").html(`my name is ${this.name} and my id is ${this.id}`);
+    //note: automatic check-ins are called questionnaires in the api return
+    $("#acContent").html(`
+			<h2>Stats for ${this.name}</h2>
+			<ul>
+				<li>Campfire chats sent: ${this.campfireChats}</li>
+				<li>Messages sent: ${this.messagesSent}</li>
+				<li>Automatic check-ins: ${this.questionnaire}</li> 
+				<li>To-dos completed: ${this.toDos}</li>
+				<li>Emails forwarded: ${this.emailsForwarded}</li>
+				<li>Scheduled events created: ${this.schedule}</li>
+				<li>Docs and files uploaded: ${this.docsAndFiles}</li>	
+			</ul>`);
   }
 }
 
@@ -56,6 +70,7 @@ let teams = []; //this will hold all the Team objects associated with the projec
 function processSelectedAccount() {
   got.people = false;
   got.teams = false;
+  got.peopleInTeams = false;
   $("#acContent")
     .html("<span id='loading'>Loading...</span>")
     .css("display", "block"); //clear stats and show the loading message
@@ -111,10 +126,6 @@ function processSelectedAccount() {
     .catch(error => {
       console.error(error);
     });
-
-  //load participants into the 'select participant' selector
-
-  //load the groups into the groups selector
 }
 
 function getPeople() {
@@ -162,24 +173,73 @@ function loadMore() {
       .then(result => {
         //put the returned data into the team array object
         const data = JSON.parse(result.data);
-        console.log(data.length);
         for (let i = 0; i < data.length; i++) {
           teams[index].people.push(data[i].id);
           teams[index].people.push(data[i].name);
         }
+        got.peopleInTeams = true;
       })
       .catch(error => console.error(error));
   }
 }
 
 function changeParticipant(index) {
-  $("#acContent")
-    .html("<span id='loading'>Loading...</span>")
-    .css("display", "block"); //clear stats and show the loading message
   //reset the other selection box default values
   $("#selectTeam :nth-child(1)").prop("selected", true);
   $("#selectStat :nth-child(1)").prop("selected", true);
-  people[index].present();
+  if (got.peopleInTeams != true) {
+    //show the still loading message
+    $("#acContent")
+      .html(
+        "<span id='loading'>Still generating background data on people. Please try again shortly</span>"
+      )
+      .css("display", "block"); //clear stats and show the loading message
+  } else {
+    //proceed to generate the stats for this person
+    $("#acContent")
+      .html("<span id='loading'>Loading...</span>")
+      .css("display", "block"); //clear stats and show the loading message
+    //check what team the person is in
+    let teamID = [];
+    for (let i = 0; i < teams.length; i++) {
+      if (teams[i].people.includes(people[index].id)) {
+        teamID.push(teams[i].id);
+      }
+    }
+    console.log(`this person was found in ${teamID.length} teams`);
+    //console.dir(teamID);
+    //TO DO: now fetch passing in (each) of the team IDs, user ID and getting the relevant data
+
+    //prepare stats for this person
+    fetch(
+      `/getPersonInfo/${account.id}/${account.token}/${people[index].id}/${
+        teamID[0]
+      }`
+    )
+      .then(result => result.json())
+      .then(result => {
+        //put the returned data into the team array object
+        console.log(
+          `Getting stats for ${people[index].name} who has ID: ${
+            people[index].id
+          }`
+        );
+
+        const data = JSON.parse(result.data);
+        console.log("***YO*****");
+        console.log(typeof data);
+        people[index].campfireChats = data.campfireChats;
+        people[index].messagesSent = data.messagesSent;
+        people[index].questionnaire = data.questionnaire;
+        people[index].toDos = data.toDos;
+        people[index].emailsForwarded = data.emailsForwarded;
+        people[index].schedule = data.schedule;
+        people[index].docsAndFiles = data.docsAndFiles;
+
+        people[index].present(); //display the team data on screen
+      })
+      .catch(error => console.error(error));
+  }
 }
 
 function changeTeam(index) {

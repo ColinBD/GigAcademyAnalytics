@@ -8,14 +8,7 @@ var keys = require("./config/keys");
 var path = require("path");
 
 let promises = []; //promises array
-
-// Configure the Facebook strategy for use by Passport.
-//
-// OAuth 2.0-based strategies require a `verify` function which receives the
-// credential (`accessToken`) for accessing the Facebook API on the user's
-// behalf, along with the user's profile.  The function must invoke `cb`
-// with a user object, which will be set at `req.user` in route handlers after
-// authentication.
+let promises2 = []; //promises array
 
 passport.use(
   new Strategy(
@@ -30,15 +23,6 @@ passport.use(
   )
 );
 
-// Configure Passport authenticated session persistence.
-//
-// In order to restore authentication state across HTTP requests, Passport needs
-// to serialize users into and deserialize users out of the session.  In a
-// production-quality application, this would typically be as simple as
-// supplying the user ID when serializing, and querying the user record by ID
-// from the database when deserializing.  However, due to the fact that this
-// example does not have a database, the complete Facebook profile is serialized
-// and deserialized.
 passport.serializeUser(function(user, cb) {
   cb(null, user);
 });
@@ -68,8 +52,6 @@ app.use(
 );
 app.use(express.static(path.join(__dirname, "public")));
 
-// Initialize Passport and restore authentication state, if any, from the
-// session.
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -77,17 +59,10 @@ app.use(passport.session());
 app.get("/", function(req, res) {
   if (req.user) {
     console.log("we've got a user with ID: ");
-    //console.log(req.user.accounts[0])
-    //console.dir(req.user.accounts)
     console.dir(req.user);
   }
   res.render("home", { user: req.user });
 });
-
-// app.get('/login',
-//   function(req, res){
-//     res.render('login');
-//   });
 
 app.get("/login/basecamp", passport.authenticate("basecamp"));
 
@@ -116,7 +91,6 @@ app.get(
   "/projects/:user_id/:user_token",
   require("connect-ensure-login").ensureLoggedIn("/"),
   function(req, res) {
-    //res.send("here is some project data");
     let { user_id, user_token } = req.params;
 
     var options = {
@@ -128,11 +102,7 @@ app.get(
     };
 
     function callback(error, response, body) {
-      //let projects = []
       if (!error) {
-        // projects = JSON.parse(body)
-        // console.log("*** PROJECTS ***");
-        // console.dir(projects);
         res.json({
           data: body
         });
@@ -145,6 +115,7 @@ app.get(
   }
 );
 
+//to get the initial list of participants in a project
 app.get(
   "/getPeople/:user_id/:user_token/:HQ_id",
   require("connect-ensure-login").ensureLoggedIn("/"),
@@ -204,7 +175,7 @@ app.get(
     function callback(error, response, body) {
       if (!error) {
         let data = JSON.parse(body);
-        console.dir(data);
+        //console.dir(data);
         let dockInfo = {};
         //promises array was here
         for (let i = 0; i < data.dock.length; i++) {
@@ -425,5 +396,121 @@ app.get(
     Request(options, callback);
   }
 );
+
+//get info for a specific person
+app.get(
+  "/getPersonInfo/:account_id/:user_token/:user_id/:team_id",
+  require("connect-ensure-login").ensureLoggedIn("/"),
+  function(req, res) {
+    let { account_id, user_token, user_id, team_id } = req.params;
+
+    var options = {
+      url: `https://3.basecampapi.com/${account_id}/projects/${team_id}.json`,
+      headers: {
+        authorization: `bearer ${user_token}`,
+        "user-agent": "Gig-Academy (c.dodds2@newcastle.ac.uk)"
+      }
+    };
+
+    function callback(error, response, body) {
+      if (!error) {
+        let data = JSON.parse(body);
+        let dockInfo = {};
+        //loop through the dock items extracting these dock URls to then process them
+        for (let i = 0; i < data.dock.length; i++) {
+          const myPromise = getPersonsDockData(
+            data.dock[i].url,
+            user_token
+          ).then(data => {
+            dockInfo = { ...dockInfo, ...data };
+          });
+          promises2.push(myPromise); //add the promise to the array so we can keep track of their resolution
+        }
+        //handle the promise resolution
+        //when all promises resolve
+        Promise.all(promises2).then(function() {
+          console.log("*****SUCCESS*******");
+          res.json({
+            data: JSON.stringify(dockInfo)
+          });
+        });
+      } else {
+        res.send("an error occured");
+      }
+    }
+
+    Request(options, callback);
+  }
+);
+
+//get individual persons data from the dock data types
+function getPersonsDockData(url, token) {
+  return new Promise((resolve, reject) => {
+    var options = {
+      url: url,
+      headers: {
+        authorization: `bearer ${token}`,
+        "user-agent": "Gig-Academy (c.dodds2@newcastle.ac.uk)"
+      }
+    };
+
+    function callback(error, response, body) {
+      if (!error) {
+        let data = JSON.parse(body);
+        //console.dir(data)
+        let obj = {};
+        switch (data.title) {
+          case "Campfire":
+            //get the length of the list from here: data.lines_url
+            const myPromise = getChatLength(data.lines_url, token).then(
+              data => {
+                obj = { campfireChats: data };
+                resolve(obj);
+              }
+            );
+            break;
+          case "Message Board":
+            obj = { messagesSent: data.messages_count };
+            resolve(obj);
+            break;
+          case "To-dos":
+            obj = { toDos: 4 };
+            resolve(obj);
+            break;
+          case "Schedule":
+            obj = { schedule: data.entries_count };
+            resolve(obj);
+            break;
+          case "Automatic Check-ins":
+            obj = { questionnaire: data.questions_count };
+            resolve(obj);
+            break;
+          case "Docs & Files":
+            let total =
+              parseInt(data.uploads_count) +
+              parseInt(data.documents_count) +
+              parseInt(data.vaults_count);
+            obj = { docsAndFiles: total };
+            resolve(obj);
+            break;
+          case "Email Forwards":
+            obj = { emailsForwarded: data.forwards_count };
+            resolve(obj);
+            break;
+          default:
+            console.log("no matches found with API counts");
+        }
+      } else {
+        reject("there was an error");
+      }
+    }
+
+    Request(options, callback);
+  });
+}
+
+app.get("*", function(req, res) {
+  res.send("Oops! We can't find what you're looking for");
+});
 
 app.listen(process.env["PORT"] || 3000);
