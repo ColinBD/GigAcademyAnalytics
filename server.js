@@ -159,10 +159,16 @@ app.get(
 );
 
 app.get(
-  "/getTeamInfo/:user_id/:user_token/:team_id",
+  "/getTeamInfo/:user_id/:user_token/:team_id/:admin_List?",
   require("connect-ensure-login").ensureLoggedIn("/"),
   function(req, res) {
-    let { user_id, user_token, team_id } = req.params;
+    let { user_id, user_token, team_id, admin_List } = req.params;
+    let admins = [];
+    if (admin_List != undefined) {
+      //separate these out into an admins array
+      admins = admin_List.match(/.{1,8}/g);
+      admins = admins.map(item => parseInt(item));
+    }
 
     var options = {
       url: `https://3.basecampapi.com/${user_id}/projects/${team_id}.json`,
@@ -179,15 +185,18 @@ app.get(
         let dockInfo = {};
         //promises array was here
         for (let i = 0; i < data.dock.length; i++) {
-          const myPromise = getDockData(data.dock[i].url, user_token).then(
-            data => {
-              dockInfo = { ...dockInfo, ...data };
-            }
-          );
+          const myPromise = getDockData(
+            data.dock[i].url,
+            user_token,
+            admins
+          ).then(data => {
+            dockInfo = { ...dockInfo, ...data };
+          });
           promises.push(myPromise); //add the promise to the array so we can keep track of their resolution
         }
         //when all promises resolve
         Promise.all(promises).then(function() {
+          promises = []; //clear the array
           res.json({
             data: JSON.stringify(dockInfo)
           });
@@ -202,7 +211,7 @@ app.get(
 );
 
 //get dock data
-function getDockData(url, token) {
+function getDockData(url, token, admins) {
   return new Promise((resolve, reject) => {
     var options = {
       url: url,
@@ -215,12 +224,12 @@ function getDockData(url, token) {
     function callback(error, response, body) {
       if (!error) {
         let data = JSON.parse(body);
-        //console.dir(data)
+        //console.dir(data);
         let obj = {};
         switch (data.title) {
           case "Campfire":
             //get the length of the list from here: data.lines_url
-            const myPromise = getChatLength(data.lines_url, token).then(
+            const myPromise = getChatLength(data.lines_url, token, admins).then(
               data => {
                 obj = { chat: data };
                 resolve(obj);
@@ -289,7 +298,7 @@ function getDockData(url, token) {
 }
 
 //get number of chats
-function getChatLength(url, token) {
+function getChatLength(url, token, admins) {
   return new Promise((resolve, reject) => {
     var options = {
       url: url,
@@ -301,7 +310,14 @@ function getChatLength(url, token) {
     let length = 0;
     function callback(error, response, body) {
       if (!error) {
-        length += JSON.parse(body).length;
+        //filter the body here removing any items belonging to people in the admins array
+        thebody = JSON.parse(body);
+        console.log("********* Pre filter body length = " + thebody.length);
+        thebody = thebody.filter(
+          item => admins.includes(item.creator.id) == false
+        );
+        console.log("********* POST filter body length = " + thebody.length);
+        length += thebody.length;
         if (response.headers.link === undefined) {
           //no more pages so send the data
           resolve(length);
@@ -412,6 +428,8 @@ app.get(
       }
     };
 
+    console.log(`URL is ${options.url}`);
+
     function callback(error, response, body) {
       if (!error) {
         let data = JSON.parse(body);
@@ -422,6 +440,7 @@ app.get(
             data.dock[i].url,
             user_token
           ).then(data => {
+            console.dir(data);
             dockInfo = { ...dockInfo, ...data };
           });
           promises2.push(myPromise); //add the promise to the array so we can keep track of their resolution
@@ -430,6 +449,7 @@ app.get(
         //when all promises resolve
         Promise.all(promises2).then(function() {
           console.log("*****SUCCESS*******");
+          promises2 = []; //clear the array
           res.json({
             data: JSON.stringify(dockInfo)
           });

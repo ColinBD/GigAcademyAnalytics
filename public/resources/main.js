@@ -66,6 +66,8 @@ class Team {
 
 let people = []; //this will hold all the Person objects associated with the project
 let teams = []; //this will hold all the Team objects associated with the project
+let admins = []; //this will hold a list of admins which will be used when filtering the data for collected stats
+let adminList = ""; //the admin IDs as one long string
 
 function processSelectedAccount() {
   got.people = false;
@@ -135,7 +137,11 @@ function getPeople() {
     .then(result => {
       const data = JSON.parse(result.data);
       data.map(item => {
-        if (item.personable_type !== "Integration") {
+        //if people are admins then add them to the admins array which will be used for filtering
+        if (item.admin == true) {
+          admins.push(item.id);
+        }
+        if (item.personable_type !== "Integration" && item.admin == false) {
           people.push(new Person(item.name, item.id)); //add to people array
           $("#selectParticipant").append(
             $("<option>", { value: item.id, text: item.name })
@@ -183,6 +189,7 @@ function loadMore() {
   }
 }
 
+//triggered by a 'select participant' drop-down interaction
 function changeParticipant(index) {
   //reset the other selection box default values
   $("#selectTeam :nth-child(1)").prop("selected", true);
@@ -206,42 +213,70 @@ function changeParticipant(index) {
         teamID.push(teams[i].id);
       }
     }
-    console.log(`this person was found in ${teamID.length} teams`);
-    //console.dir(teamID);
-    //TO DO: now fetch passing in (each) of the team IDs, user ID and getting the relevant data
-
-    //prepare stats for this person
-    fetch(
-      `/getPersonInfo/${account.id}/${account.token}/${people[index].id}/${
-        teamID[0]
+    console.log(
+      `this person was found in ${teamID.length} teams and has id ${
+        people[index].id
       }`
-    )
-      .then(result => result.json())
-      .then(result => {
-        //put the returned data into the team array object
-        console.log(
-          `Getting stats for ${people[index].name} who has ID: ${
-            people[index].id
-          }`
-        );
+    );
+    if (teamID.length == 0) {
+      $("#acContent").html(`
+      <p>This user was not found in any account</p>`);
+      return;
+    }
+    //As a person could be in more than one team we must loop through their teams, adding the results from each team before putting these collated results into the people object.
+    let dockItems = {
+      chats: 0,
+      messages: 0,
+      questionnaires: 0,
+      toDos: 0,
+      emails: 0,
+      schedule: 0,
+      docs: 0
+    };
+    let awaiting = teamID.length;
+    for (let i = 0; i < teamID.length; i++) {
+      fetch(
+        `/getPersonInfo/${account.id}/${account.token}/${people[index].id}/${
+          teamID[0]
+        }`
+      )
+        .then(result => result.json())
+        .then(result => {
+          //put the returned data into the team array object
+          // console.log(
+          //   `Getting stats for ${people[index].name} who has ID: ${
+          //     people[index].id
+          //   }`
+          // );
+          //console.dir(result);
+          const data = JSON.parse(result.data);
+          dockItems.chats += data.campfireChats;
+          dockItems.messages += data.messagesSent;
+          dockItems.questionnaires += data.questionnaire;
+          dockItems.toDos += data.toDos;
+          dockItems.emails += data.emailsForwarded;
+          dockItems.schedule += data.schedule;
+          dockItems.docs += data.docsAndFiles;
+          awaiting--;
+          if (awaiting == 0) {
+            //prepare stats for this person
+            people[index].campfireChats = dockItems.chats;
+            people[index].messagesSent = dockItems.messages;
+            people[index].questionnaire = dockItems.questionnaires;
+            people[index].toDos = dockItems.toDos;
+            people[index].emailsForwarded = dockItems.emails;
+            people[index].schedule = dockItems.schedule;
+            people[index].docsAndFiles = dockItems.docs;
 
-        const data = JSON.parse(result.data);
-        console.log("***YO*****");
-        console.log(typeof data);
-        people[index].campfireChats = data.campfireChats;
-        people[index].messagesSent = data.messagesSent;
-        people[index].questionnaire = data.questionnaire;
-        people[index].toDos = data.toDos;
-        people[index].emailsForwarded = data.emailsForwarded;
-        people[index].schedule = data.schedule;
-        people[index].docsAndFiles = data.docsAndFiles;
-
-        people[index].present(); //display the team data on screen
-      })
-      .catch(error => console.error(error));
+            people[index].present(); //display the team data on screen
+          }
+        })
+        .catch(error => console.error(error));
+    }
   }
 }
 
+//triggered by a 'select group' drop-down interaction
 function changeTeam(index) {
   $("#acContent")
     .html("<span id='loading'>Loading...</span>")
@@ -249,8 +284,15 @@ function changeTeam(index) {
   //reset the other selection box default values
   $("#selectParticipant :nth-child(1)").prop("selected", true);
   $("#selectStat :nth-child(1)").prop("selected", true);
+  //generate the admin IDs list
+  adminList = "";
+  admins.map(item => (adminList += item));
   //prepare team stats
-  fetch(`/getTeamInfo/${account.id}/${account.token}/${teams[index].id}`)
+  fetch(
+    `/getTeamInfo/${account.id}/${account.token}/${
+      teams[index].id
+    }/${adminList}`
+  )
     .then(result => result.json())
     .then(result => {
       //put the returned data into the team array object
