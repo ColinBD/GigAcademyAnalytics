@@ -165,7 +165,7 @@ app.get(
     let { user_id, user_token, team_id, admin_List } = req.params;
     let admins = [];
     if (admin_List != undefined) {
-      //separate these out into an admins array
+      //separate the string out into an admins array
       admins = admin_List.match(/.{1,8}/g);
       admins = admins.map(item => parseInt(item));
     }
@@ -210,7 +210,7 @@ app.get(
   }
 );
 
-//get dock data
+//get dock data for the group
 function getDockData(url, token, admins) {
   return new Promise((resolve, reject) => {
     var options = {
@@ -228,7 +228,7 @@ function getDockData(url, token, admins) {
         let obj = {};
         switch (data.title) {
           case "Campfire":
-            //get the length of the list from here: data.lines_url
+            //get the length of the list from here: data.lines_url enuring admins contributions are filtered out
             const myPromise = getChatLength(data.lines_url, token, admins).then(
               data => {
                 obj = { chat: data };
@@ -237,43 +237,37 @@ function getDockData(url, token, admins) {
             );
             break;
           case "Message Board":
+            //get the number of messages ensuring admins contributions are filtered out
+            console.log("*********** CASE OF MESSAGE BOARD *******");
+            console.dir(data);
             obj = { message_board: data.messages_count };
             resolve(obj);
+            // const myPromise = getMessagesLength(
+            //   data.messages_url,
+            //   token,
+            //   admins
+            // ).then(data => {
+            //   obj = { message_board: data };
+            //   resolve(obj);
+            // });
             break;
           case "To-dos":
+            //get the number of to-dos ensuring admins contributions are filtered out
             obj = { todoset: data.completed_ratio };
             resolve(obj);
             break;
           case "Schedule":
+            //get the number of scheduled entries ensuring admins contributions are filtered out
             obj = { schedule: data.entries_count };
             resolve(obj);
             break;
           case "Automatic Check-ins":
+            //get the number of check-ins ensuring admins contributions are filtered out
             obj = { questionnaire: data.questions_count };
             resolve(obj);
             break;
           case "Docs & Files":
-            // if (data.vaults_count == 0) {
-            //   let total =
-            //     parseInt(data.uploads_count) + parseInt(data.documents_count);
-            //   obj = { vault: total };
-            //   resolve(obj);
-            // } else {
-            //   //get the length of the list from here: data.lines_url
-            //   const myPromise = getVaultLength(data.vaults_url, token).then(
-            //     vaultData => {
-            //       console.log(
-            //         "We've got the number of vault files: " + vaultData
-            //       );
-            //       let total =
-            //         parseInt(data.uploads_count) +
-            //         parseInt(data.documents_count) +
-            //         vaultData;
-            //       obj = { vault: total };
-            //       resolve(obj);
-            //     }
-            //   );
-            // }
+            //get the number of docs & files ensuring admins contributions are filtered out
             let total =
               parseInt(data.uploads_count) +
               parseInt(data.documents_count) +
@@ -282,6 +276,7 @@ function getDockData(url, token, admins) {
             resolve(obj);
             break;
           case "Email Forwards":
+            //get the number of emails forwarded ensuring admins contributions are filtered out
             obj = { inbox: data.forwards_count };
             resolve(obj);
             break;
@@ -311,12 +306,18 @@ function getChatLength(url, token, admins) {
     function callback(error, response, body) {
       if (!error) {
         //filter the body here removing any items belonging to people in the admins array
-        thebody = JSON.parse(body);
-        console.log("********* Pre filter body length = " + thebody.length);
-        thebody = thebody.filter(
-          item => admins.includes(item.creator.id) == false
-        );
-        console.log("********* POST filter body length = " + thebody.length);
+        let thebody = JSON.parse(body);
+        //if we are getting the chat length for the group we need to filter out the admins
+        //however if we are getting the chat length for an individual 'admins' will not have been passed
+        if (admins != undefined) {
+          let preFilterlength = thebody.length;
+          thebody = thebody.filter(
+            item => admins.includes(item.creator.id) == false
+          );
+          console.log(
+            `Filtered chat length from ${preFilterlength} to ${thebody.length}`
+          );
+        }
         length += thebody.length;
         if (response.headers.link === undefined) {
           //no more pages so send the data
@@ -339,7 +340,61 @@ function getChatLength(url, token, admins) {
   });
 }
 
-//get number of chats
+//get number of messages a team has sent
+//TO DO TODO: this isn't working!!!
+function getMessagesLength(url, token, admins) {
+  console.log("*********MESSAGES FUNC CALLED*******");
+  return new Promise((resolve, reject) => {
+    var options = {
+      url: url,
+      headers: {
+        authorization: `bearer ${token}`,
+        "user-agent": "Gig-Academy (c.dodds2@newcastle.ac.uk)"
+      }
+    };
+    let length = 0;
+    function callback(error, response, body) {
+      if (!error) {
+        //filter the body here removing any items belonging to people in the admins array
+        let thebody = JSON.parse(body);
+        console.log("******** messages call *************");
+        console.dir(thebody);
+        //if we are getting the messages length for the group we need to filter out the admins
+        //however if we are getting the messages length for an individual 'admins' will not have been passed
+        if (admins != undefined) {
+          let preFilterlength = thebody.length;
+          thebody = thebody.filter(
+            item => admins.includes(item.creator.id) == false
+          );
+          console.log(
+            `Filtered messages length from ${preFilterlength} to ${
+              thebody.length
+            }`
+          );
+        }
+        length += thebody.length;
+        if (response.headers.link === undefined) {
+          //no more pages so send the data
+          resolve(length);
+        } else {
+          //get the next page and compile it
+          let str = response.headers.link;
+          str = str.split("<");
+          str = str[1].split(">");
+          str = str[0];
+          options.url = str;
+          //call the Request function again
+          Request(options, callback);
+        }
+      } else {
+        reject("there was an error getting the length of the chat");
+      }
+    }
+    Request(options, callback);
+  });
+}
+
+//get number of documents
 function getVaultLength(url, token) {
   return new Promise((resolve, reject) => {
     var options = {
@@ -448,7 +503,7 @@ app.get(
         //handle the promise resolution
         //when all promises resolve
         Promise.all(promises2).then(function() {
-          console.log("*****SUCCESS*******");
+          console.log("we have the data for the individual");
           promises2 = []; //clear the array
           res.json({
             data: JSON.stringify(dockInfo)
@@ -481,7 +536,6 @@ function getPersonsDockData(url, token) {
         let obj = {};
         switch (data.title) {
           case "Campfire":
-            //get the length of the list from here: data.lines_url
             const myPromise = getChatLength(data.lines_url, token).then(
               data => {
                 obj = { campfireChats: data };

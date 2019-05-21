@@ -237,7 +237,7 @@ function changeParticipant(index) {
     for (let i = 0; i < teamID.length; i++) {
       fetch(
         `/getPersonInfo/${account.id}/${account.token}/${people[index].id}/${
-          teamID[0]
+          teamID[i]
         }`
       )
         .then(result => result.json())
