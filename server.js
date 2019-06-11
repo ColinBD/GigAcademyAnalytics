@@ -230,37 +230,36 @@ function getDockData(url, token, admins) {
         switch (data.title) {
           case "Campfire":
             //get the length of the list from here: data.lines_url enuring admins contributions are filtered out
-            const myCampfirePromise = getChatLength(
+            const myCampfirePromise = getFilteredDataLength(
               data.lines_url,
               token,
-              admins
+              admins,
+              "chat"
             ).then(data => {
               obj = { chat: data };
               resolve(obj);
             });
             break;
           case "Message Board":
-            //get the number of messages ensuring admins contributions are filtered out
-            // console.log("*********** CASE OF MESSAGE BOARD *******");
-            // console.dir(data);
-            // obj = { message_board: data.messages_count };
-            // resolve(obj);
-            const myMsgBoardPromise = getMessagesLength(
+            const myMsgBoardPromise = getFilteredDataLength(
               data.messages_url,
               token,
-              admins
+              admins,
+              "messages"
             ).then(data => {
               obj = { message_board: data };
               resolve(obj);
             });
             break;
           case "To-dos":
-            //get the number of to-dos ensuring admins contributions are filtered out
+            //get the ratio of to-dos completed
             obj = { todoset: data.completed_ratio };
             resolve(obj);
             break;
           case "Schedule":
             //get the number of scheduled entries ensuring admins contributions are filtered out
+            // console.log("*** here comes SCHEDULE data ***");
+            // console.dir(data);
             obj = { schedule: data.entries_count };
             resolve(obj);
             break;
@@ -296,7 +295,7 @@ function getDockData(url, token, admins) {
 }
 
 //get number of chats
-function getChatLength(url, token, admins) {
+function getFilteredDataLength(url, token, admins, type) {
   return new Promise((resolve, reject) => {
     var options = {
       url: url,
@@ -310,7 +309,7 @@ function getChatLength(url, token, admins) {
       if (!error) {
         //filter the body here removing any items belonging to people in the admins array
         let thebody = JSON.parse(body);
-        //if we are getting the chat length for the group we need to filter out the admins
+        //if we are getting the chat/message length for the group we need to filter out the admins
         //however if we are getting the chat length for an individual 'admins' will not have been passed
         if (admins != undefined) {
           let preFilterlength = thebody.length;
@@ -318,55 +317,7 @@ function getChatLength(url, token, admins) {
             item => admins.includes(item.creator.id) == false
           );
           console.log(
-            `Filtered CHAT length from ${preFilterlength} to ${thebody.length}`
-          );
-        }
-        length += thebody.length;
-        if (response.headers.link === undefined) {
-          //no more pages so send the data
-          resolve(length);
-        } else {
-          //get the next page and compile it
-          let str = response.headers.link;
-          str = str.split("<");
-          str = str[1].split(">");
-          str = str[0];
-          options.url = str;
-          //call the Request function again
-          Request(options, callback);
-        }
-      } else {
-        reject("there was an error getting the length of the chat");
-      }
-    }
-    Request(options, callback);
-  });
-}
-
-//get number of messages a team has sent
-function getMessagesLength(url, token, admins) {
-  return new Promise((resolve, reject) => {
-    var options = {
-      url: url,
-      headers: {
-        authorization: `bearer ${token}`,
-        "user-agent": "Gig-Academy (c.dodds2@newcastle.ac.uk)"
-      }
-    };
-    let length = 0;
-    function callback(error, response, body) {
-      if (!error) {
-        //filter the body here removing any items belonging to people in the admins array
-        let thebody = JSON.parse(body);
-        //if we are getting the messages length for the group we need to filter out the admins
-        //however if we are getting the messages length for an individual 'admins' will not have been passed
-        if (admins != undefined) {
-          let preFilterlength = thebody.length;
-          thebody = thebody.filter(
-            item => admins.includes(item.creator.id) == false
-          );
-          console.log(
-            `Filtered MESSAGES length from ${preFilterlength} to ${
+            `Filtered ${type} length from ${preFilterlength} to ${
               thebody.length
             }`
           );
@@ -376,7 +327,6 @@ function getMessagesLength(url, token, admins) {
           //no more pages so send the data
           resolve(length);
         } else {
-          console.log("got another page of messages");
           //get the next page and compile it
           let str = response.headers.link;
           str = str.split("<");
@@ -387,7 +337,7 @@ function getMessagesLength(url, token, admins) {
           Request(options, callback);
         }
       } else {
-        reject("there was an error getting the length of the messages");
+        reject(`there was an error getting the ${type} length`);
       }
     }
     Request(options, callback);
