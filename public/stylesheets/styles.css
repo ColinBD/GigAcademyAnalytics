@@ -152,7 +152,6 @@ select:hover {
 
 #acContent {
   text-align: center;
-  margin-top: 10%;
 }
 
 #acContent ul {
@@ -168,6 +167,18 @@ select:hover {
 
 #loading {
   animation: blinker 1s linear infinite;
+}
+
+.metricTitle {
+  display: inline-block;
+}
+
+.metricChart {
+  display: inline-block;
+  position: relative;
+  width: 400px;
+  top: 25px;
+  left: 20px;
 }
 
 @keyframes blinker {

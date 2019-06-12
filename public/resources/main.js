@@ -1,3 +1,9 @@
+/*
+TO DO:
+>make it prettier by replacing the loading message using CSSFX library https://cssfx.dev/
+>change the icon from my RP icon
+*/
+
 let got = {
   people: false,
   teams: false,
@@ -20,17 +26,77 @@ class Person {
 
   present() {
     //note: automatic check-ins are called questionnaires in the api return
+    //individual to do data is not available through the basecamp api
+    // <div class="metricContainer">
+    //   <div class="metricTitle">
+    //     <li>To-dos completed: <strong>${this.toDos}</strong></li>
+    //   </div>
+    //   <div class="metricChart">
+    //     <canvas id="myChartToDos"></canvas>
+    //   </div>
+    // </div>
     $("#acContent").html(`
 			<h2>Stats for ${this.name}</h2>
-			<ul>
-				<li>Campfire chats sent: ${this.campfireChats}</li>
-				<li>Messages sent: ${this.messagesSent}</li>
-				<li>Automatic check-ins: ${this.questionnaire}</li> 
-				<li>To-dos completed: ${this.toDos}</li>
-				<li>Emails forwarded: ${this.emailsForwarded}</li>
-				<li>Scheduled events created: ${this.schedule}</li>
-				<li>Docs and files uploaded: ${this.docsAndFiles}</li>	
-			</ul>`);
+      <ul>
+        <div class="metricContainer">
+          <div class="metricTitle">
+            <li>Campfire chats sent: <strong>${this.campfireChats}</strong></li>
+          </div>
+          <div class="metricChart">
+            <canvas id="myChartChats"></canvas>
+          </div>
+        </div>
+        <div class="metricContainer">
+          <div class="metricTitle">
+            <li>Messages sent: <strong>${this.messagesSent}</strong></li>
+          </div>
+          <div class="metricChart">
+            <canvas id="myChartMessages"></canvas>
+          </div>
+        </div>
+        <div class="metricContainer">
+          <div class="metricTitle">
+            <li>Automatic check-ins: <strong>${this.questionnaire}</strong></li>
+          </div> 
+          <div class="metricChart">
+            <canvas id="myChartCheckins"></canvas>
+          </div>
+        </div>
+        <div class="metricContainer">
+          <div class="metricTitle">
+            <li>Emails forwarded: <strong>${this.emailsForwarded}</strong></li>
+          </div>
+          <div class="metricChart">
+            <canvas id="myChartEmails"></canvas>
+          </div>
+        </div>
+        <div class="metricContainer">
+          <div class="metricTitle">
+            <li>Scheduled events created: <strong>${this.schedule}</strong></li>
+          </div>
+          <div class="metricChart">
+            <canvas id="myChartEvents"></canvas>
+          </div>
+        </div>
+        <div class="metricContainer">
+          <div class="metricTitle">
+            <li>Docs and files uploaded: <strong>${
+              this.docsAndFiles
+            }</strong></li>
+          </div>
+          <div class="metricChart">
+            <canvas id="myChartDocs"></canvas>
+          </div>	
+        </div>
+      </ul>`);
+
+    //now draw the charts
+    drawChart("myChartChats");
+    drawChart("myChartMessages");
+    drawChart("myChartCheckins");
+    drawChart("myChartEmails");
+    drawChart("myChartEvents");
+    drawChart("myChartDocs");
   }
 }
 
@@ -53,14 +119,76 @@ class Team {
     $("#acContent").html(`
 			<h2>Stats for ${this.name}</h2>
 			<ul>
-				<li>Campfire chats sent: ${this.campfireChats}</li>
-				<li>Messages sent: ${this.messagesSent}</li>
-				<li>Automatic check-ins: ${this.questionnaire}</li> 
-				<li>To-dos completed: ${this.toDos}</li>
-				<li>Emails forwarded: ${this.emailsForwarded}</li>
-				<li>Scheduled events created: ${this.schedule}</li>
-				<li>Docs and files uploaded: ${this.docsAndFiles}</li>	
-			</ul>`);
+        <div class="metricContainer">
+          <div class="metricTitle">
+            <li>Campfire chats sent: <strong>${this.campfireChats}</strong></li>
+          </div>
+          <div class="metricChart">
+              <canvas id="myChartChats"></canvas>
+          </div>
+        </div>
+        <div class="metricContainer">
+          <div class="metricTitle">
+            <li>Messages sent: <strong>${this.messagesSent}</strong></li>
+          </div>
+          <div class="metricChart">
+              <canvas id="myChartMessages"></canvas>
+          </div>
+        </div>
+        <div class="metricContainer">
+          <div class="metricTitle">
+            <li>Automatic check-ins: <strong>${
+              this.questionnaire
+            }</strong></li> 
+          </div>
+          <div class="metricChart">
+              <canvas id="myChartCheckins"></canvas>
+          </div>
+        </div>
+        <div class="metricContainer">
+          <div class="metricTitle">
+            <li>To-dos completed: <strong>${this.toDos}</strong></li>
+          </div>
+          <div class="metricChart">
+              <canvas id="myChartToDos"></canvas>
+          </div>
+        </div>
+        <div class="metricContainer">
+          <div class="metricTitle">
+            <li>Emails forwarded: <strong>${this.emailsForwarded}</strong></li>
+          </div>
+          <div class="metricChart">
+              <canvas id="myChartEmails"></canvas>
+          </div>
+        </div>
+        <div class="metricContainer">
+          <div class="metricTitle">
+            <li>Scheduled events created: <strong>${this.schedule}</strong></li>
+          </div>
+          <div class="metricChart">
+              <canvas id="myChartEvents"></canvas>
+          </div>
+        </div>
+        <div class="metricContainer">
+          <div class="metricTitle">
+            <li>Docs and files uploaded: <strong>${
+              this.docsAndFiles
+            }</strong></li>	
+          </div>
+          <div class="metricChart">
+              <canvas id="myChartDocs"></canvas>
+          </div>
+        </div>
+        </ul>`);
+
+    //now draw the charts
+    drawChart("myChartChats");
+    drawChart("myChartMessages");
+    drawChart("myChartCheckins");
+    drawChart("myChartToDos");
+    drawChart("myChartEmails");
+    drawChart("myChartEvents");
+    drawChart("myChartDocs");
   }
 }
 
@@ -320,4 +448,64 @@ function changeStat(index) {
   $("#acContent").html(`
 			<h2>${index.value} stats</h2>
 			<p>Relevant statistical information will go here</p>`);
+}
+
+function drawChart(chart) {
+  var ctx = document.getElementById(chart).getContext("2d");
+  var chart = new Chart(ctx, {
+    // The type of chart we want to create
+    type: "bar",
+
+    // The data for our dataset
+    data: {
+      //labels: ["", "", ""],
+      labels: generatelabels(30),
+      datasets: [
+        {
+          label: "My First dataset",
+          backgroundColor: "rgb(255, 99, 132)",
+          borderColor: "rgb(255, 99, 132)",
+          //data: [0, 2, 1]
+          data: generateRandomData(30)
+        }
+      ]
+    },
+
+    // Configuration options go here
+    options: {
+      legend: false,
+      aspectRatio: 8,
+      maintainAspectRation: false,
+      scales: {
+        xAxes: [
+          {
+            gridLines: {
+              display: false
+            }
+          }
+        ],
+        yAxes: [
+          {
+            gridLines: {
+              display: false
+            }
+          }
+        ]
+      }
+    }
+  });
+}
+
+function generateRandomData(num) {
+  let array = Array(num).fill(0);
+  //now fill 33% with 'other' values
+  const fraction = num / Math.floor(Math.random() * 3 + 3); //between 1/3 and 1/6 of array will be changed
+  for (let i = 0; i < fraction; i++) {
+    array[Math.floor(Math.random() * num)] = Math.floor(Math.random() * 3 + 1);
+  }
+  return array;
+}
+
+function generatelabels(num) {
+  return Array(num).fill("");
 }

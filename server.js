@@ -294,7 +294,7 @@ function getDockData(url, token, admins) {
   });
 }
 
-//get number of chats
+//get number of chats & messages (used by both team and individual processes)
 function getFilteredDataLength(url, token, admins, type) {
   return new Promise((resolve, reject) => {
     var options = {
@@ -438,22 +438,22 @@ app.get(
       if (!error) {
         let data = JSON.parse(body);
         let dockInfo = {};
+        let promises = [];
         //loop through the dock items extracting these dock URls to then process them
         for (let i = 0; i < data.dock.length; i++) {
           const myPromise = getPersonsDockData(
             data.dock[i].url,
             user_token
           ).then(data => {
-            console.dir(data);
             dockInfo = { ...dockInfo, ...data };
           });
-          promises2.push(myPromise); //add the promise to the array so we can keep track of their resolution
+          promises.push(myPromise); //add the promise to the array so we can keep track of their resolution
         }
         //handle the promise resolution
         //when all promises resolve
-        Promise.all(promises2).then(function() {
+        Promise.all(promises).then(function() {
           console.log("we have the data for the individual");
-          promises2 = []; //clear the array
+          promises = []; //clear the array
           res.json({
             data: JSON.stringify(dockInfo)
           });
@@ -481,23 +481,28 @@ function getPersonsDockData(url, token) {
     function callback(error, response, body) {
       if (!error) {
         let data = JSON.parse(body);
-        //console.dir(data)
+        console.log("*** here comes the data ***");
+        console.dir(data);
         let obj = {};
         switch (data.title) {
           case "Campfire":
-            const myPromise = getChatLength(data.lines_url, token).then(
-              data => {
-                obj = { campfireChats: data };
-                resolve(obj);
-              }
-            );
+            const myPromise = getFilteredDataLength(
+              data.lines_url,
+              token,
+              [], //we don't need to filter admins so just use an empty array
+              "chat"
+            ).then(data => {
+              obj = { campfireChats: data };
+              resolve(obj);
+            });
             break;
           case "Message Board":
             obj = { messagesSent: data.messages_count };
             resolve(obj);
             break;
           case "To-dos":
-            obj = { toDos: 4 };
+            //THIS DATA IS NOT AVAILABLE THROUGH THE BASECAMP API
+            obj = { toDos: 99 };
             resolve(obj);
             break;
           case "Schedule":
