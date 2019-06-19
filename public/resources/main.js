@@ -17,7 +17,9 @@ class Person {
   }
 
   campfireChats = 0;
+  chatsList = [];
   messagesSent = 0;
+  messagesList = [];
   questionnaire = 0;
   toDos = 0;
   emailsForwarded = 0;
@@ -27,14 +29,6 @@ class Person {
   present() {
     //note: automatic check-ins are called questionnaires in the api return
     //individual to do data is not available through the basecamp api
-    // <div class="metricContainer">
-    //   <div class="metricTitle">
-    //     <li>To-dos completed: <strong>${this.toDos}</strong></li>
-    //   </div>
-    //   <div class="metricChart">
-    //     <canvas id="myChartToDos"></canvas>
-    //   </div>
-    // </div>
     $("#acContent").html(`
 			<h2>Stats for ${this.name}</h2>
       <ul>
@@ -91,12 +85,12 @@ class Person {
       </ul>`);
 
     //now draw the charts
-    drawChart("myChartChats");
-    drawChart("myChartMessages");
-    drawChart("myChartCheckins");
-    drawChart("myChartEmails");
-    drawChart("myChartEvents");
-    drawChart("myChartDocs");
+    drawChart("myChartChats", this.chatsList);
+    drawChart("myChartMessages", this.messagesList);
+    //drawChart("myChartCheckins");
+    //drawChart("myChartEmails");
+    //drawChart("myChartEvents");
+    //drawChart("myChartDocs");
   }
 }
 
@@ -107,7 +101,9 @@ class Team {
   }
   people = [];
   campfireChats = 0;
+  chatsList = [];
   messagesSent = 0;
+  messagesSentList = [];
   questionnaire = 0;
   toDos = 0;
   emailsForwarded = 0;
@@ -182,13 +178,13 @@ class Team {
         </ul>`);
 
     //now draw the charts
-    drawChart("myChartChats");
-    drawChart("myChartMessages");
-    drawChart("myChartCheckins");
-    drawChart("myChartToDos");
-    drawChart("myChartEmails");
-    drawChart("myChartEvents");
-    drawChart("myChartDocs");
+    drawChart("myChartChats", this.chatsList);
+    drawChart("myChartMessages", this.messagesSentList);
+    //drawChart("myChartCheckins");
+    //drawChart("myChartToDos");
+    //drawChart("myChartEmails");
+    //drawChart("myChartEvents");
+    //drawChart("myChartDocs");
   }
 }
 
@@ -196,6 +192,7 @@ let people = []; //this will hold all the Person objects associated with the pro
 let teams = []; //this will hold all the Team objects associated with the project
 let admins = []; //this will hold a list of admins which will be used when filtering the data for collected stats
 let adminList = ""; //the admin IDs as one long string
+let projectStartDate = ""; //this will hold the date the project was created - used when graphing engagement
 
 function processSelectedAccount() {
   got.people = false;
@@ -230,9 +227,11 @@ function processSelectedAccount() {
           disabled: true
         })
       ); //add to selection list
-      //clear the people and team arrays
+      //clear the people and team arrays and date var
       people = [];
       teams = [];
+      projectStartDate = "";
+
       const data = JSON.parse(result.data);
       data.map(item => {
         if (item.purpose == "team") {
@@ -244,6 +243,8 @@ function processSelectedAccount() {
           //we can get the people list from here
           //store the ID for this project and we'll use it to get people
           account.HQ_id = item.id;
+          //store the project start date
+          projectStartDate = item.created_at;
           getPeople();
         }
       });
@@ -354,7 +355,9 @@ function changeParticipant(index) {
     //As a person could be in more than one team we must loop through their teams, adding the results from each team before putting these collated results into the people object.
     let dockItems = {
       chats: 0,
+      chatsList: [],
       messages: 0,
+      messagesList: [],
       questionnaires: 0,
       toDos: 0,
       emails: 0,
@@ -378,24 +381,31 @@ function changeParticipant(index) {
           // );
           //console.dir(result);
           const data = JSON.parse(result.data);
-          dockItems.chats += data.campfireChats;
-          dockItems.messages += data.messagesSent;
+          dockItems.chats += data.chat;
+          dockItems.chatsList = [...dockItems.chatsList, ...data.chatList];
+          dockItems.messages += data.message_board;
+          dockItems.messagesList = [
+            ...dockItems.messagesList,
+            ...data.message_boardList
+          ];
           dockItems.questionnaires += data.questionnaire;
           dockItems.toDos += data.toDos;
-          dockItems.emails += data.emailsForwarded;
+          dockItems.emails += data.inbox;
           dockItems.schedule += data.schedule;
-          dockItems.docs += data.docsAndFiles;
+          dockItems.docs += data.vault;
           awaiting--;
           if (awaiting == 0) {
             //prepare stats for this person
             people[index].campfireChats = dockItems.chats;
+            people[index].chatsList = dockItems.chatsList;
             people[index].messagesSent = dockItems.messages;
+            people[index].messagesList = dockItems.messagesList;
             people[index].questionnaire = dockItems.questionnaires;
             people[index].toDos = dockItems.toDos;
             people[index].emailsForwarded = dockItems.emails;
             people[index].schedule = dockItems.schedule;
             people[index].docsAndFiles = dockItems.docs;
-
+            console.dir(people[index]);
             people[index].present(); //display the team data on screen
           }
         })
@@ -426,13 +436,15 @@ function changeTeam(index) {
       //put the returned data into the team array object
       const data = JSON.parse(result.data);
       teams[index].campfireChats = data.chat;
+      teams[index].chatsList = data.chatList;
       teams[index].messagesSent = data.message_board;
+      teams[index].messagesSentList = data.message_boardList;
       teams[index].questionnaire = data.questionnaire;
       teams[index].toDos = data.todoset;
       teams[index].emailsForwarded = data.inbox;
       teams[index].schedule = data.schedule;
       teams[index].docsAndFiles = data.vault;
-
+      console.dir(teams[index]);
       teams[index].present(); //display the team data on screen
     })
     .catch(error => console.error(error));
@@ -450,7 +462,28 @@ function changeStat(index) {
 			<p>Relevant statistical information will go here</p>`);
 }
 
-function drawChart(chart) {
+function drawChart(chart, list) {
+  let newList = [];
+  //loop through the list
+  if (list.length > 0) {
+    //vars we need
+    //count the number of days between dates
+    const oneDay = 24 * 60 * 60 * 1000; //hours*minutes*seconds*milliseconds
+    const d = new Date();
+    //the first one is between the proj start and list[0]
+    let a = new Date(list[0]);
+    let days = Math.floor((d.getTime() - a.getTime()) / oneDay);
+    newList.push(days);
+    //loop through the remaining days until
+    for (let i = 0; i < list.length; i++) {}
+    //finally calculate between last loop day and now
+
+    console.dir(newList);
+  }
+  //for each item get the number of days between it and the previous item
+  //newList.push(getDaysBetween())
+  //use projectStartDate as the x-axis zero
+  console.log(`we will use the date ${projectStartDate} as the x-axis zero`);
   var ctx = document.getElementById(chart).getContext("2d");
   var chart = new Chart(ctx, {
     // The type of chart we want to create

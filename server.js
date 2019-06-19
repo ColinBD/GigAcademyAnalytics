@@ -211,7 +211,7 @@ app.get(
   }
 );
 
-//get dock data for the group
+//get dock data for the group or individual
 function getDockData(url, token, admins) {
   return new Promise((resolve, reject) => {
     var options = {
@@ -236,7 +236,7 @@ function getDockData(url, token, admins) {
               admins,
               "chat"
             ).then(data => {
-              obj = { chat: data };
+              obj = { chat: data.length, chatList: data.dates };
               resolve(obj);
             });
             break;
@@ -247,7 +247,10 @@ function getDockData(url, token, admins) {
               admins,
               "messages"
             ).then(data => {
-              obj = { message_board: data };
+              obj = {
+                message_board: data.length,
+                message_boardList: data.dates
+              };
               resolve(obj);
             });
             break;
@@ -304,7 +307,10 @@ function getFilteredDataLength(url, token, admins, type) {
         "user-agent": "Gig-Academy (c.dodds2@newcastle.ac.uk)"
       }
     };
-    let length = 0;
+    let filteredData = {
+      length: 0,
+      dates: []
+    };
     function callback(error, response, body) {
       if (!error) {
         //filter the body here removing any items belonging to people in the admins array
@@ -316,16 +322,19 @@ function getFilteredDataLength(url, token, admins, type) {
           thebody = thebody.filter(
             item => admins.includes(item.creator.id) == false
           );
+          thebody.map(item => filteredData.dates.push(item.created_at));
           console.log(
             `Filtered ${type} length from ${preFilterlength} to ${
               thebody.length
             }`
           );
         }
-        length += thebody.length;
+        filteredData.length += thebody.length;
         if (response.headers.link === undefined) {
           //no more pages so send the data
-          resolve(length);
+          console.log(`*** filteredData for ${type} ***`);
+          console.dir(filteredData);
+          resolve(filteredData);
         } else {
           //get the next page and compile it
           let str = response.headers.link;
@@ -441,9 +450,11 @@ app.get(
         let promises = [];
         //loop through the dock items extracting these dock URls to then process them
         for (let i = 0; i < data.dock.length; i++) {
-          const myPromise = getPersonsDockData(
+          const myPromise = getDockData(
+            //was using getPersonsDockData
             data.dock[i].url,
-            user_token
+            user_token,
+            [] //no admins
           ).then(data => {
             dockInfo = { ...dockInfo, ...data };
           });
@@ -452,7 +463,8 @@ app.get(
         //handle the promise resolution
         //when all promises resolve
         Promise.all(promises).then(function() {
-          console.log("we have the data for the individual");
+          // console.log("we have the data for the individual");
+          // console.dir(dockInfo);
           promises = []; //clear the array
           res.json({
             data: JSON.stringify(dockInfo)
@@ -466,76 +478,6 @@ app.get(
     Request(options, callback);
   }
 );
-
-//get individual persons data from the dock data types
-function getPersonsDockData(url, token) {
-  return new Promise((resolve, reject) => {
-    var options = {
-      url: url,
-      headers: {
-        authorization: `bearer ${token}`,
-        "user-agent": "Gig-Academy (c.dodds2@newcastle.ac.uk)"
-      }
-    };
-
-    function callback(error, response, body) {
-      if (!error) {
-        let data = JSON.parse(body);
-        console.log("*** here comes the data ***");
-        console.dir(data);
-        let obj = {};
-        switch (data.title) {
-          case "Campfire":
-            const myPromise = getFilteredDataLength(
-              data.lines_url,
-              token,
-              [], //we don't need to filter admins so just use an empty array
-              "chat"
-            ).then(data => {
-              obj = { campfireChats: data };
-              resolve(obj);
-            });
-            break;
-          case "Message Board":
-            obj = { messagesSent: data.messages_count };
-            resolve(obj);
-            break;
-          case "To-dos":
-            //THIS DATA IS NOT AVAILABLE THROUGH THE BASECAMP API
-            obj = { toDos: 99 };
-            resolve(obj);
-            break;
-          case "Schedule":
-            obj = { schedule: data.entries_count };
-            resolve(obj);
-            break;
-          case "Automatic Check-ins":
-            obj = { questionnaire: data.questions_count };
-            resolve(obj);
-            break;
-          case "Docs & Files":
-            let total =
-              parseInt(data.uploads_count) +
-              parseInt(data.documents_count) +
-              parseInt(data.vaults_count);
-            obj = { docsAndFiles: total };
-            resolve(obj);
-            break;
-          case "Email Forwards":
-            obj = { emailsForwarded: data.forwards_count };
-            resolve(obj);
-            break;
-          default:
-            console.log("no matches found with API counts");
-        }
-      } else {
-        reject("there was an error");
-      }
-    }
-
-    Request(options, callback);
-  });
-}
 
 app.get("*", function(req, res) {
   res.send("Oops! We can't find what you're looking for");
