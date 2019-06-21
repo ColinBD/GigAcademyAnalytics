@@ -464,26 +464,99 @@ function changeStat(index) {
 
 function drawChart(chart, list) {
   let newList = [];
-  //loop through the list
+  let presentationList = [];
+  //aim is to count the number of days between dates then chart these gaps and spikes
   if (list.length > 0) {
     //vars we need
-    //count the number of days between dates
     const oneDay = 24 * 60 * 60 * 1000; //hours*minutes*seconds*milliseconds
-    const d = new Date();
-    //the first one is between the proj start and list[0]
-    let a = new Date(list[0]);
-    let days = Math.floor((d.getTime() - a.getTime()) / oneDay);
+    let a = new Date(projectStartDate);
+    //the list has newest occurances first, oldest occurances last!
+    //therefore first one is between the proj start and list[list.length -1] i.e. last list entry
+    let b = new Date(list[list.length - 1]);
+    let days = Math.floor((b.getTime() - a.getTime()) / oneDay);
     newList.push(days);
     //loop through the remaining days until
-    for (let i = 0; i < list.length; i++) {}
+    for (let i = list.length - 1; i > 0; i--) {
+      a = new Date(list[i]);
+      b = new Date(list[i - 1]);
+      days = Math.floor((b.getTime() - a.getTime()) / oneDay);
+      newList.push(days);
+    }
     //finally calculate between last loop day and now
-
+    a = new Date(list[0]);
+    b = new Date(); //now/today
+    days = Math.floor((b.getTime() - a.getTime()) / oneDay);
+    newList.push(days);
     console.dir(newList);
+    //now construct the presentation list
+    //for each number in newlist, we insert that number of 1's zeros into presentation list before putting in a '1'..or more
+    if (newList[0] == 0) {
+      //check if newList has zeros in a row due to items entered on the same day
+      let i = 1;
+      let count = 0; //stores the number of zeros we find in a row
+      while (i < newList.length - 1) {
+        if (newList[i] == 0) {
+          //if next item was entered on the same day
+          count++; //inc count
+        } else {
+          break;
+        }
+        i++;
+      }
+      //now we push in a number - normally 1 - which will be the bar height. >1 when multiple items were found on a day
+      //although we skip the last one as the end should be zeros i.e. gap between last entry and current date
+      presentationList.push(count + 1);
+    }
+    for (let i = 0; i < newList.length; i++) {
+      if (newList[i] > 0) {
+        //prepare the appropriate number of zeros
+        let a = new Array(newList[i] - 1).fill(0);
+        //check if newList has zeros in a row due to items entered on the same day
+        let j = i;
+        j++; //as we'll check the next item in the array
+        let count = 0; //stores the number of zeros we find in a row
+        while (j < newList.length - 1) {
+          if (newList[j] == 0) {
+            //if next item was entered on the same day
+            count++; //inc count
+          } else {
+            break;
+          }
+          j++;
+        }
+        //now we push in a number - normally 1 - which will be the bar height. >1 when multiple items were found on a day
+        //although we skip the last one as the end should be zeros i.e. gap between last entry and current date
+        if (i < newList.length - 1) {
+          a.push(count + 1);
+        }
+        //concatonate the array
+        presentationList = [...presentationList, ...a];
+      }
+    }
   }
-  //for each item get the number of days between it and the previous item
-  //newList.push(getDaysBetween())
-  //use projectStartDate as the x-axis zero
-  console.log(`we will use the date ${projectStartDate} as the x-axis zero`);
+  if (presentationList.length == 0) {
+    console.log("no presention list created");
+    presentationList.push(0);
+  }
+  //we should now have our presentationList for the data
+  //we need a corresponding labels list - we can fill it with empty strings
+  var labelsList = new Array(presentationList.length).fill("");
+  // let txt = projectStartDate.split("T"); //make start date label
+  // labelsList[0] = txt[0];
+  // //make the end label in the same format
+  // var today = new Date();
+  // var dd = today.getDate();
+  // var mm = today.getMonth() + 1;
+  // var yyyy = today.getFullYear();
+  // if (dd < 10) {
+  //   dd = "0" + dd;
+  // }
+  // if (mm < 10) {
+  //   mm = "0" + mm;
+  // }
+  // today = yyyy + "-" + mm + "-" + dd;
+  // labelsList[labelsList.length - 1] = today; //make end date label
+  //console.log(`we will use the date ${projectStartDate} as the x-axis zero`);
   var ctx = document.getElementById(chart).getContext("2d");
   var chart = new Chart(ctx, {
     // The type of chart we want to create
@@ -492,14 +565,16 @@ function drawChart(chart, list) {
     // The data for our dataset
     data: {
       //labels: ["", "", ""],
-      labels: generatelabels(30),
+      //labels: generatelabels(30),
+      labels: labelsList,
       datasets: [
         {
           label: "My First dataset",
           backgroundColor: "rgb(255, 99, 132)",
           borderColor: "rgb(255, 99, 132)",
           //data: [0, 2, 1]
-          data: generateRandomData(30)
+          //data: generateRandomData(30)
+          data: presentationList
         }
       ]
     },
