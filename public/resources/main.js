@@ -1,5 +1,8 @@
 /*
 TO DO:
+>I think I am getting the same chat and messages data for each student
+--- I need to print out the array of dates for their data submissions
+--- Go via the basecamp interface (or web API) and cross reference these to work out what is going on
 >make it prettier by replacing the loading message using CSSFX library https://cssfx.dev/
 >change the icon from my RP icon
 */
@@ -53,7 +56,7 @@ class Person {
             <li>Automatic check-ins: <strong>${this.questionnaire}</strong></li>
           </div> 
           <div class="metricChart">
-            <canvas id="myChartCheckins"></canvas>
+            <canvas id="myChartCheckins" style="height: 53px"></canvas>
           </div>
         </div>
         <div class="metricContainer">
@@ -61,7 +64,7 @@ class Person {
             <li>Emails forwarded: <strong>${this.emailsForwarded}</strong></li>
           </div>
           <div class="metricChart">
-            <canvas id="myChartEmails"></canvas>
+            <canvas id="myChartEmails" style="height: 53px"></canvas>
           </div>
         </div>
         <div class="metricContainer">
@@ -69,7 +72,7 @@ class Person {
             <li>Scheduled events created: <strong>${this.schedule}</strong></li>
           </div>
           <div class="metricChart">
-            <canvas id="myChartEvents"></canvas>
+            <canvas id="myChartEvents" style="height: 53px"></canvas>
           </div>
         </div>
         <div class="metricContainer">
@@ -79,7 +82,7 @@ class Person {
             }</strong></li>
           </div>
           <div class="metricChart">
-            <canvas id="myChartDocs"></canvas>
+            <canvas id="myChartDocs" style="height: 53px"></canvas>
           </div>	
         </div>
       </ul>`);
@@ -138,7 +141,7 @@ class Team {
             }</strong></li> 
           </div>
           <div class="metricChart">
-              <canvas id="myChartCheckins"></canvas>
+              <canvas id="myChartCheckins" style="height: 53px"></canvas>
           </div>
         </div>
         <div class="metricContainer">
@@ -146,7 +149,7 @@ class Team {
             <li>To-dos completed: <strong>${this.toDos}</strong></li>
           </div>
           <div class="metricChart">
-              <canvas id="myChartToDos"></canvas>
+              <canvas id="myChartToDos" style="height: 53px"></canvas>
           </div>
         </div>
         <div class="metricContainer">
@@ -154,7 +157,7 @@ class Team {
             <li>Emails forwarded: <strong>${this.emailsForwarded}</strong></li>
           </div>
           <div class="metricChart">
-              <canvas id="myChartEmails"></canvas>
+              <canvas id="myChartEmails" style="height: 53px"></canvas>
           </div>
         </div>
         <div class="metricContainer">
@@ -162,7 +165,7 @@ class Team {
             <li>Scheduled events created: <strong>${this.schedule}</strong></li>
           </div>
           <div class="metricChart">
-              <canvas id="myChartEvents"></canvas>
+              <canvas id="myChartEvents" style="height: 53px"></canvas>
           </div>
         </div>
         <div class="metricContainer">
@@ -172,7 +175,7 @@ class Team {
             }</strong></li>	
           </div>
           <div class="metricChart">
-              <canvas id="myChartDocs"></canvas>
+              <canvas id="myChartDocs" style="height: 53px"></canvas>
           </div>
         </div>
         </ul>`);
